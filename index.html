@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .calc {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 240px;
+    padding: 16px;
+    background: #222;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+  input {
+    grid-column: span 4;
+    height: 52px;
+    padding: 0 12px;
+    text-align: right;
+    font-size: 26px;
+    color: #fff;
+    background: #333;
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+  button {
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    background: #444;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+  }
+  button:hover { background: #555; }
+  button:active { transform: scale(0.96); }
+  .op { background: #ff9f0a; font-weight: bold; }
+  .op:hover { background: #ffb340; }
+  .clear { background: #ff453a; }
+  .clear:hover { background: #ff6961; }
+  .eq { grid-column: span 2; background: #30d158; font-weight: bold; }
+  .eq:hover { background: #4cd964; }
+</style>
+</head>
+<body>
+
+<div class="calc">
+  <input id="d" value="0" readonly>
+  <button class="clear" onclick="pulisci()">C</button>
+  <button onclick="speciale('sqrt')">√</button>
+  <button onclick="speciale('pow')">x²</button>
+  <button class="op" onclick="add('/')">÷</button>
+
+  <button onclick="add('7')">7</button>
+  <button onclick="add('8')">8</button>
+  <button onclick="add('9')">9</button>
+  <button class="op" onclick="add('*')">×</button>
+
+  <button onclick="add('4')">4</button>
+  <button onclick="add('5')">5</button>
+  <button onclick="add('6')">6</button>
+  <button class="op" onclick="add('-')">−</button>
+
+  <button onclick="add('1')">1</button>
+  <button onclick="add('2')">2</button>
+  <button onclick="add('3')">3</button>
+  <button class="op" onclick="add('+')">+</button>
+
+  <button onclick="add('0')">0</button>
+  <button onclick="add('.')">.</button>
+  <button class="eq" onclick="uguale()">=</button>
+</div>
+
+<script>
+  const d = document.getElementById('d');
+  const operatori = ['+', '-', '*', '/'];
+
+  function add(v) {
+    if (d.value === 'Errore') d.value = '0';
+    const ultimo = d.value.slice(-1);
+
+    if (operatori.includes(v) && operatori.includes(ultimo)) {
+      d.value = d.value.slice(0, -1) + v;
+      return;
+    }
+
+    if (v === '.') {
+      for (let i = d.value.length - 1; i >= 0; i--) {
+        if (d.value[i] === '.') return;
+        if (operatori.includes(d.value[i])) break;
+      }
+    }
+
+    d.value = (d.value === '0' && !operatori.includes(v) && v !== '.')
+      ? v
+      : d.value + v;
+  }
+
+  function pulisci() {
+    d.value = '0';
+  }
+
+  function dividiInToken(expr) {
+    const tokens = [];
+    let numero = '';
+
+    for (let i = 0; i < expr.length; i++) {
+      const c = expr[i];
+      if (c === '-' && i === 0) {
+        numero += c;
+      } else if (operatori.includes(c)) {
+        if (numero !== '') tokens.push(numero);
+        tokens.push(c);
+        numero = '';
+      } else {
+        numero += c;
+      }
+    }
+
+    if (numero !== '') tokens.push(numero);
+    return tokens;
+  }
+
+  function calcola(expr) {
+    const tokens = dividiInToken(expr);
+    if (tokens.length === 0) return 0;
+    if (tokens.length % 2 === 0) tokens.pop();
+
+    for (let i = 1; i < tokens.length; i += 2) {
+      if (tokens[i] === '*' || tokens[i] === '/') {
+        const a = parseFloat(tokens[i - 1]);
+        const b = parseFloat(tokens[i + 1]);
+        if (tokens[i] === '/' && b === 0) return 'Errore';
+        const res = tokens[i] === '*' ? a * b : a / b;
+        tokens.splice(i - 1, 3, res);
+        i -= 2;
+      }
+    }
+
+    let totale = parseFloat(tokens[0]);
+    for (let i = 1; i < tokens.length; i += 2) {
+      const b = parseFloat(tokens[i + 1]);
+      if (tokens[i] === '+') totale += b;
+      if (tokens[i] === '-') totale -= b;
+    }
+
+    return isNaN(totale) ? 'Errore' : Math.round(totale * 1e10) / 1e10;
+  }
+
+  function uguale() {
+    d.value = calcola(d.value);
+  }
+
+  function speciale(tipo) {
+    if (d.value === 'Errore') return;
+    const val = calcola(d.value);
+    if (val === 'Errore') return;
+
+    if (tipo === 'sqrt') {
+      d.value = val < 0 ? 'Errore' : Math.round(Math.sqrt(val) * 1e10) / 1e10;
+    } else {
+      d.value = Math.round(Math.pow(val, 2) * 1e10) / 1e10;
+    }
+  }
+</script>
+
+</body>
+</html>
